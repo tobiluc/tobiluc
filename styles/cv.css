@@ -1,26 +1,30 @@
+/*-------- Cetgory specific colors ---------*/
 :root {
   --color-education: #55cc88;
   --color-work: #4da3ff;
   --color-other: #bb66ff;
 }
 
+.timeline-item[data-category="education"] .content,
 .filter-button[data-filter="education"],
 .timeline-item[data-category="education"] {
   --category-color: var(--color-education);
 }
 
+.timeline-item[data-category="work"] .content,
 .filter-button[data-filter="work"],
 .timeline-item[data-category="work"] {
   --category-color: var(--color-work);
 }
 
+.timeline-item[data-category="other"] .content,
 .filter-button[data-filter="other"],
 .timeline-item[data-category="other"] {
   --category-color: var(--color-other);
 }
 
 .filter-button[data-filter="all"] {
-  --category-color: var(--icon-color);
+  --category-color: #8d8d8d;
 }
 
 
@@ -51,6 +55,7 @@
   height: 42px;
   border-radius: 50%;
   border: 1px solid #ccc;
+  fill: var(--icon-color);
   background: var(--bg-color);
   place-items: center;
   cursor: pointer;
@@ -65,19 +70,9 @@
   color: var(--icon-color);
 }
 
-.filter-button:hover img {
-  opacity: 1;
-  transform: scale(1.05);
-}
-
 .filter-button:hover {
   background-color: var(--category-color);
   border-color: var(--category-color);
-}
-
-.filter-button.active img {
-  filter: invert(1);
-  opacity: 1;
 }
 
 .filter-button {
@@ -194,6 +189,7 @@ margin-bottom: 0.5rem;
   background: none;
   border: none;
   cursor: pointer;
+  color: var(--text-color);
 }
 
 
@@ -224,6 +220,7 @@ margin-bottom: 0.5rem;
     margin-bottom: 32px;
     position: relative;
     transition: transform 0.5s ease;
+    cursor: pointer;
 }
 .timeline-item.left {
     left: 0;
@@ -304,39 +301,8 @@ margin-bottom: 0.5rem;
   left: 0rem;
 }
 
-/* Category Specific Stylings */
-.timeline-item[data-category="work"] .content {
-    border: 5px solid #4da3ff;
-    background: #4da3ff44;
+.timeline-item .content {
+    border: 5px solid var(--category-color);
+    background: color-mix(in srgb, var(--category-color), transparent 70%);
     backdrop-filter: blur(6px);
 }
-.timeline-item[data-category="education"] .content {
-    border: 5px solid #55cc88;
-    background: #55cc8844;
-    backdrop-filter: blur(6px);
-}
-
-.timeline-item[data-category="other"] .content {
-    border: 5px solid #bb66ff;
-    background: #bb66ff44;
-    backdrop-filter: blur(6px);
-}
-
-/* responsive: stack items on small screens */
-/* @media screen and (max-width: 600px) {
-  .timeline::before {
-    left: 8px;
-  }
-  .timeline-item {
-    width: 100%;
-    padding-left: 30px;
-    padding-right: 15px;
-  }
-  .timeline-item.left, .timeline-item.right {
-    left: 0;
-    text-align: left;
-  }
-  .timeline-item::after {
-    left: 0;
-  }
-} */

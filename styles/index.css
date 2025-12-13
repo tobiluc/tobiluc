@@ -8,15 +8,7 @@
 }
 
 .intro-text {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     max-width: 600px;
     color: var(--text-color);
-}
-
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
 }
