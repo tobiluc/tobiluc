@@ -2,6 +2,8 @@ body {
     background: var(--bg-color);
     color: var(--text-color);
     transition: background 0.25s, color 0.25s;
+    font-size: clamp(0.9rem, 2.5vw, 1.25rem);
+    line-height: 1.6;
 }
 
 /* Background Canvas (Floating Shapes) */
@@ -12,7 +14,8 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -1; /* render behind */
-    background: var(--bg-color);
+    background: none;
+    /*background: var(--bg-color);*/
 }
 
 /* Top Navigation Bar */
@@ -32,11 +35,20 @@ body {
     backdrop-filter: blur(6px);
 }
 
-nav a {
+.top-bar nav a {
+    display: inline-block;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0 1rem;
+    padding-right: 1rem;
     color: var(--text-color);
     text-decoration: none;
-    margin: 0 10px;
-    transition: color 0.2s;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.top-bar nav a:hover {
+    color: var(--icon-hover-color);
+    transform: scale(1.05);
 }
 
 /* --- Center content in the page --- */
@@ -49,23 +61,6 @@ nav a {
     align-items: center; /* horizontal centering */
     text-align: center; /* center the paragraph text */
     padding: 20px;
-}
-
-/* --- Image styling --- */
-.profile-img {
-    width: 320px;
-    height: 320px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-bottom: 20px;
-    border: 3px solid var(--icon-color);
-}
-
-/* --- Paragraph styling --- */
-.intro-text {
-    font-size: 1.2rem;
-    max-width: 600px;
-    color: var(--text-color);
 }
 
 /* Socials Footer */

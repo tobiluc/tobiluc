@@ -1,29 +1,26 @@
+:root {
+  --color-education: #55cc88;
+  --color-work: #4da3ff;
+  --color-other: #bb66ff;
+}
+
+.filter-button[data-filter="education"],
 .timeline-item[data-category="education"] {
-  --item-color: #55cc88;
+  --category-color: var(--color-education);
 }
 
+.filter-button[data-filter="work"],
 .timeline-item[data-category="work"] {
-  --item-color: #4da3ff;
+  --category-color: var(--color-work);
 }
 
+.filter-button[data-filter="other"],
 .timeline-item[data-category="other"] {
-  --item-color: #bb66ff;
+  --category-color: var(--color-other);
 }
 
 .filter-button[data-filter="all"] {
-  --filter-color: var(--icon-color);
-}
-
-.filter-button[data-filter="work"] {
-  --filter-color: #4da3ff;
-}
-
-.filter-button[data-filter="education"] {
-  --filter-color: #55cc88;
-}
-
-.filter-button[data-filter="other"] {
-  --filter-color: #bb66ff;
+  --category-color: var(--icon-color);
 }
 
 
@@ -74,8 +71,8 @@
 }
 
 .filter-button:hover {
-  background-color: var(--filter-color);
-  border-color: var(--filter-color);
+  background-color: var(--category-color);
+  border-color: var(--category-color);
 }
 
 .filter-button.active img {
@@ -226,10 +223,7 @@ margin-bottom: 0.5rem;
     width: 50%;
     margin-bottom: 32px;
     position: relative;
-    transition: transform 0.5s ease,
-}
-.timeline-item:hover {
-    transform: translateY(-6px);
+    transition: transform 0.5s ease;
 }
 .timeline-item.left {
     left: 0;
@@ -249,6 +243,8 @@ margin-bottom: 0.5rem;
   height: 100%;
   background: var(--icon-color);
 }
+
+/* --------- Timeline Item -------------*/
 /* each timeline item */
 .timeline-item {
   position: relative;
@@ -270,17 +266,22 @@ margin-bottom: 0.5rem;
     margin-top: -128px;  /* Vertical Overlap */
 }
 
-/* content boxes */
 .timeline-item .content {
-  background: var(--bg-color);
-  border: 2px solid var(--icon-color);
-  padding: 15px;
-  border-radius: 8px;
-  display: inline-block;
-  position: relative;
+    position: relative;
+    border-radius: 8px;
+    padding: 15px;
+    background: var(--category-color)44; /* semi-transparent base */
+    overflow: hidden; /* clip the pseudo-element */
+    display: inline-block;
+    transition: transform 0.3s ease;
 }
 
-/* Connect items to vertical line */
+/* hover lift */
+.timeline-item:hover .content {
+    transform: translateY(-6px);
+}
+
+/*------- Connect items to vertical line -------*/
 .timeline-item {
   position: relative;
 }
@@ -291,7 +292,7 @@ margin-bottom: 0.5rem;
   top: 50%;
   width: 2.5rem;
   height: 4px;
-  background: var(--item-color);
+  background: var(--category-color);
   transform: translateY(-50%);
 }
 
@@ -302,27 +303,6 @@ margin-bottom: 0.5rem;
 .timeline-item.right::before {
   left: 0rem;
 }
-
-
-/* circles connecting to the line */
-/* .timeline-item::after {
-  content: '';
-  position: absolute;
-  top: 25px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--icon-color);
-  border: 2px solid var(--bg-color);
-}
-
-.timeline-item.left::after {
-  right: -6px;
-}
-
-.timeline-item.right::after {
-  left: -6px;
-} */
 
 /* Category Specific Stylings */
 .timeline-item[data-category="work"] .content {

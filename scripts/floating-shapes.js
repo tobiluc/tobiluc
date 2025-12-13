@@ -136,11 +136,49 @@ class Rectangle extends Particle
     }
 }
 
+class TextParticle extends Particle {
+    constructor(text) {
+        super();
+        this.text = text || "★";
+        this.fontFamily = "Arial, sans-serif";
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.pos[0], this.pos[1]);
+        ctx.rotate(this.rotation);
+
+        ctx.font = `${this.size[0]}px ${this.fontFamily}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        if (this.filled) {
+            ctx.fillStyle = this.color;
+            ctx.fillText(this.text, 0, 0);
+        } else {
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 2;
+            ctx.strokeText(this.text, 0, 0);
+        }
+
+        ctx.restore();
+    }
+
+    reset() {
+        super.reset();
+        this.size[0] *= 2.5;
+    }
+}
+
+
 /* Create some Shapes */
 particles = [];
 for (let i = 0; i < 20; i++) {particles.push(new Ball());}
 for (let i = 0; i < 20; i++) {particles.push(new Triangle());}
 for (let i = 0; i < 20; i++) {particles.push(new Rectangle());}
+for (const txt of ["*","@", "Hiii :D", "HexHex", "IGRec", "Sprinkles!", "c(^.^c)"]) {
+    particles.push(new TextParticle(txt));
+}
 
 /* Click Interaction */
 canvas.addEventListener("click", e => {
@@ -150,7 +188,8 @@ canvas.addEventListener("click", e => {
 
     particles.forEach(particle => {
         if (particle.isInside(x, y)) {
-            /* TODO */
+            particle.color = randomColor();
+            console.log("Click");
         }
     });
 });
