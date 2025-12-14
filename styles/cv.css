@@ -195,7 +195,7 @@ margin-bottom: 0.5rem;
 
 /* --------- Timeline Center ----------- */
 .timeline-wrapper {
-    max-width: 700px;
+    max-width: 90%;
     margin: 0 auto;
     padding: 80px 0;
 }
