@@ -173,9 +173,9 @@ class TextParticle extends Particle {
 
 /* Create some Shapes */
 particles = [];
-for (let i = 0; i < 20; i++) {particles.push(new Ball());}
-for (let i = 0; i < 20; i++) {particles.push(new Triangle());}
-for (let i = 0; i < 20; i++) {particles.push(new Rectangle());}
+for (let i = 0; i < 10; i++) {particles.push(new Ball());}
+for (let i = 0; i < 10; i++) {particles.push(new Triangle());}
+for (let i = 0; i < 10; i++) {particles.push(new Rectangle());}
 for (const txt of ["*","@", "Hiii :D", "HexHex", "IGRec", "Sprinkles!", "c(^.^c)"]) {
     particles.push(new TextParticle(txt));
 }

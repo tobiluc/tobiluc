@@ -20,6 +20,10 @@ export class Vec2 {
         return new Vec2(dx/d, dy/d);
     }
 
+    scaled(s) {
+        return new Vec2(s*this.x, s*this.y);
+    }
+
     get sqNorm() {
         return this.x*this.x + this.y*this.y;
     }
@@ -29,85 +33,136 @@ export class Vec2 {
     }
 }
 
-// ==================
-// Components
-// ==================
-export class AABB {
-    constructor(cx, cy, w, h) {
+// export class Sound {
+//     constructor(audio) {
+//         this.audio = audio;
+//     }
+
+//     play() {
+//         this.audio.play();
+//     }
+// }
+// A BaseNode has one parent and * children
+// update on a node calls update on children nodes (same with draw)
+// the positioning is relative to the parent (where Root is the base parent with position (0,0))
+export class BaseNode {
+    constructor(name) {
+        this.name = name;
+        this.dead = false;
+        this.parent = null;
+        this.children = [];
+    }
+
+    update(deltaTime) {
+        this.children.forEach(child => {
+            child.update(deltaTime);
+        });
+
+        // Cleanup
+        this.children = this.children.filter(child => !child.dead);
+    }
+
+    draw(ctx) {
+        this.children.forEach(child => {
+            child.draw(ctx);
+        });
+    }
+
+    addChild(child) {
+        child.parent = this;
+        this.children.push(child);
+        return child;
+    }
+
+    getChildren(predicate, recursive=true) {
+        let res = [];
+        for (let i = 0; i < this.children.length; i++) {
+            if (predicate(this.children[i])) {res.push(this.children[i]);}
+            if (recursive) {
+                res.push.apply(res, this.children[i].getChildren(predicate, recursive));
+            }
+        }
+        return res;
+    }
+
+    getChildrenByName(name, recursive=true) {
+        return this.getChildren((child) => {return child.name === name;}, recursive);
+    }
+
+    getChildrenByType(type, recursive=true) {
+        return this.getChildren((child) => {return child instanceof type;}, recursive);
+    }
+}
+
+export class Node2d extends BaseNode {
+    constructor(x, y) {
+        super("Node2d");
+        this.position = new Vec2(x, y);
+    }
+
+    get globalPosition() {
+        if (this.parent instanceof Node2d) {return new Vec2(
+            this.parent.globalPosition.x + this.position.x,
+            this.parent.globalPosition.y + this.position.y,
+        )};
+        return this.position; // no parent
+    }
+}
+
+export class Sprite2d extends Node2d {
+    constructor(image, w, h) {
+        super(0,0);
+        this.name = "Sprite2d";
+        this.image = image;
         this.w = w;
         this.h = h;
-        this.min = new Vec2(cx-w/2, cy-h/2);
-        this.max = new Vec2(cx+w/2, cy+h/2);
     }
 
-    translate(dx, dy) {
-        this.min.x += dx;
-        this.max.x += dx;
-        this.min.y += dy;
-        this.max.y += dy;
+    draw(ctx) {
+        super.draw(ctx);
+        ctx.drawImage(this.image,
+            this.globalPosition.x-this.w/2, this.globalPosition.y-this.h/2,
+            this.w, this.h);
     }
-
-    get center() {
-        return new Vec2(
-            (this.min.x + this.max.x) / 2,
-            (this.min.y + this.max.y) / 2
-        );
-    }
-
-    get size() {
-        return new Vec2(
-            this.max.x - this.min.x,
-            this.max.y - this.min.y
-        );
-    }
-
-    intersects(aabb) {
-        return  this.min.x < aabb.max.x &&
-                this.max.x > aabb.min.x &&
-                this.min.y < aabb.max.y &&
-                this.max.y > aabb.min.y;
-    };
 }
 
-export class Collider {
-    constructor(aabb, layer = 0, mask = 0b1111) {
-        this.aabb = aabb;
-        this.layer = layer;
+export class Collider2d extends Node2d {
+    constructor(w, h, layer = 0, mask = 0b1111) {
+        super(0,0);
+        this.name = "Collider2d";
+        this.w = w;
+        this.h = h;
+        this.layer = layer; // 0,1,2,3
         this.mask = mask; // bitmask of layers it collides with
+        this.onCollision = null;
     }
 
-    canCollideWith(other) {
-        return (this.mask & (1 << other.layer)) !== 0;
-    }
-}
-
-export class Sprite {
-    constructor(image) {
-        this.image = image;
-        this.rotation = 0;
+    canCollideWith(cld) {
+        return (this.mask & (1 << cld.layer)) !== 0;
     }
 
-    draw(ctx, aabb) {
-        ctx.save();
-        ctx.translate(aabb.center.x, aabb.center.y);
-        ctx.rotate(this.rotation);
-        ctx.drawImage(this.image, -aabb.w/2, -aabb.h/2, aabb.w, aabb.h);
-        ctx.restore();
-    }
-}
-
-export class Sound {
-    constructor(audio) {
-        this.audio = audio;
+    collidesWith(cld) {
+        return  this.globalPosition.x-this.w/2 < cld.globalPosition.x+cld.w/2 &&
+                this.globalPosition.x+this.w/2 > cld.globalPosition.x-cld.w/2 &&
+                this.globalPosition.y-this.h/2 < cld.globalPosition.y+cld.h/2 &&
+                this.globalPosition.y+this.h/2 > cld.globalPosition.y-cld.h/2;
     }
 
-    play() {
-        this.audio.play();
+    draw(ctx) {
+        super.draw(ctx);
+        ctx.strokeStyle = "rgba(255,0,0,0.5)";
+        ctx.strokeRect(
+            this.globalPosition.x - this.w/2,
+            this.globalPosition.y - this.h/2,
+            this.w,
+            this.h
+        );
     }
 }
 
-export class Timer {
+export class Timer extends BaseNode {
     constructor(cooldown, oneShot = false, onTimeout = null) {
+        super("Timer");
         this.cooldown = cooldown;
         this.reset();
         this.onTimeout = onTimeout;
@@ -128,6 +183,7 @@ export class Timer {
     }
 
     update(deltaTime) {
+        super.update(deltaTime);
         if (this.counter > 0 && !this.paused) {
             this.counter -= deltaTime || 0;
             if (this.counter <= 0) {
@@ -139,47 +195,11 @@ export class Timer {
 }
 
 // ==================
-// Objects
-// ==================
-export class GameObject {
-    constructor(name) {
-        this.name = name;
-        this.dead = false;
-        this.collider = null;
-        this.sprite = null;
-    }
-
-    update(deltaTime) {}
-
-    draw(ctx) {
-        if (this.sprite && this.collider) {
-            this.sprite.draw(ctx, this.collider.aabb);
-        }
-    }
-
-    onCollision(obj) {}
-
-    get position() {
-        if (this.collider) {return this.collider.aabb.center;}
-        return null;
-    }
-
-    set position(pos) {
-        if (this.collider) {
-            this.collider.aabb.min.x = pos.x - this.collider.aabb.w/2;
-            this.collider.aabb.max.x = pos.x + this.collider.aabb.w/2;
-            this.collider.aabb.min.y = pos.y - this.collider.aabb.h/2;
-            this.collider.aabb.max.y = pos.y + this.collider.aabb.h/2;
-        }
-    }
-}
-
-// ==================
 // Particles
 // ==================
-export class Particle extends GameObject {
+export class Particle {
     constructor(x, y, vx, vy, life, size, color) {
-        super("Particle");
+        //super("Particle");
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -221,6 +241,7 @@ export class Game {
         this.lastTimestamp = 0;
         this.deltaTime = 0.1;
         this.gameObjects = [];
+        this.particles = [];
 
         // Input handling
         window.addEventListener("keydown", (e) => keys[e.key] = true);
@@ -269,26 +290,34 @@ export class Game {
     update(deltaTime) {
         // Update Game Objects
         this.gameObjects.forEach(obj => {
-            if (!obj.dead) {
-                obj.update(deltaTime);
-            }
+            if (!obj.dead) {obj.update(deltaTime);}
+        });
+        this.particles.forEach(particle => {
+            if (!particle.dead) {particle.update(deltaTime);}
         });
 
         // Collision pass
-        const collidables = this.gameObjects.filter(o => o.collider);
-        for (let i = 0; i < collidables.length; i++) {
-            const a = collidables[i];
-            for (let j = i + 1; j < collidables.length; j++) {
-                const b = collidables[j];
-                if (a.collider.canCollideWith(b.collider) && a.collider.aabb.intersects(b.collider.aabb)) {
-                    a.onCollision(b);
+        const colliders = [];
+        for (let i = 0; i < this.gameObjects.length; i++) {
+            if (this.gameObjects[i] instanceof Collider2d) {colliders.push(this.gameObjects[i]);}
+            colliders.push.apply(colliders, this.gameObjects[i].getChildrenByType(Collider2d));
+        }
+        for (let i = 0; i < colliders.length; i++) {
+            const a = colliders[i];
+            if (a.dead) {continue;}
+            for (let j = i + 1; j < colliders.length; j++) {
+                const b = colliders[j];
+                if (b.dead) {continue;}
+                if (a.canCollideWith(b) && a.collidesWith(b)) {
+                    if (a.onCollision) {a.onCollision(b);}
+                    if (b.onCollision) {b.onCollision(a);}
                 }
             }
         }
 
-
         // Cleanup
         this.gameObjects = this.gameObjects.filter(obj => !obj.dead);
+        this.particles = this.particles.filter(particle => !particle.dead);
     }
 
     draw(ctx) {
@@ -299,14 +328,18 @@ export class Game {
         this.gameObjects.forEach(obj => {
             obj.draw(ctx);
         });
+        this.particles.forEach(particle => {
+            particle.draw(ctx);
+        });
 
         // Debug
         ctx.fillStyle = "red";
         ctx.font = "24px Arial";
         ctx.textAlign = "right";
         ctx.textBaseline = "bottom";
-        ctx.fillText("FPS: "+String((1/this.deltaTime)|0), canvas.width-10, canvas.height-60);
-        ctx.fillText("#Obj: "+this.gameObjects.length, canvas.width-10, canvas.height-30);
+        ctx.fillText("FPS: "+String((1/this.deltaTime)|0), canvas.width-10, canvas.height-90);
+        ctx.fillText("#Obj: "+this.gameObjects.length, canvas.width-10, canvas.height-60);
+        ctx.fillText("#Part: "+this.particles.length, canvas.width-10, canvas.height-30);
     }
 
     emitParticles(x, y, count = 20, color="orange") {
@@ -314,7 +347,7 @@ export class Game {
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.random() * 200 + 50;
 
-            this.addObject(
+            this.particles.push(
                 new Particle(
                     x, y,
                     Math.cos(angle) * speed,
@@ -331,6 +364,8 @@ export class Game {
 // ==================
 // Assets
 // ==================
+const defaultImage = new Image();
+const defaultAudio = new Audio();
 export class AssetDatabase {
     constructor() {
         this.images = {};
@@ -338,13 +373,13 @@ export class AssetDatabase {
     }
 
     getImage(name) {
-        return this.images[name] ?? null;
+        return this.images[name] ?? defaultImage;
     }
 
     setImage(name, sprite) {
         if(Object.values(this.images).includes(name)) {
             console.error("Sprite with name "+name+" already exists!");
-            return null;
+            return defaultImage;
         }
         this.images[name] = sprite;
         return sprite;
@@ -361,13 +396,13 @@ export class AssetDatabase {
     }
 
     getAudio(name) {
-        return this.sounds[name] ?? null;
+        return this.sounds[name] ?? defaultAudio;
     }
 
     setAudio(name, sound) {
         if(Object.values(this.sounds).includes(name)) {
             console.error("Sound with name "+name+" already exists!");
-            return null;
+            return defaultAudio;
         }
         this.sounds[name] = sound;
         return sound;

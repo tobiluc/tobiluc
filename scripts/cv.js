@@ -37,19 +37,11 @@ buttons.forEach(btn => {
 const backdrop = document.getElementById("timeline-popup-backdrop");
 const titleEl = document.getElementById("popup-title");
 const contentEl = document.getElementById("popup-content");
-const imageEl = document.getElementById("popup-image");
 
 document.querySelectorAll(".timeline-item").forEach(item => {
   item.addEventListener("click", () => {
     titleEl.textContent = item.dataset.title;
     contentEl.innerHTML = item.dataset.descriptionHtml || "";
-
-    if (item.dataset.image) {
-      imageEl.src = item.dataset.image;
-      imageEl.style.display = "block";
-    } else {
-      imageEl.style.display = "none";
-    }
 
     backdrop.hidden = false;
   });

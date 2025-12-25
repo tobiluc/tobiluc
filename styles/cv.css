@@ -181,6 +181,11 @@ margin-bottom: 0.5rem;
   border-radius: 0.5rem;
 }
 
+#timeline-popup a {
+  color: var(--text-color);
+  text-decoration: none;
+}
+
 .close-btn {
   position: absolute;
   top: 0.75rem;

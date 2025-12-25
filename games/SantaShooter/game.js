@@ -1,4 +1,4 @@
-import { AABB, AssetDatabase, canvas, Game, GameObject, Sprite, Timer, keys, Collider, Vec2 } from "../ToMiGE.js";
+import {AssetDatabase, canvas, Game, Sprite2d, Timer, keys, Collider2d, Vec2, BaseNode, Node2d } from "../ToMiGE.js";
 
 //========================
 // Assets
@@ -47,7 +47,7 @@ class SantaShooter extends Game {
     constructor() {
         super("Santa Shooter");
 
-        class Background extends GameObject {
+        class Background extends BaseNode {
             constructor() {
                 super("Backhround");
                 this.x = 0;
@@ -118,6 +118,7 @@ class SantaShooter extends Game {
 
             ctx.font = "48px Arial";
             ctx.fillText("Your Score: "+globals.score, canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillText("Highscore: " + localStorage.getItem("santashooter_highscore"), canvas.width / 2, canvas.height / 2 + 10);
 
             ctx.font = "24px Arial";
             ctx.fillText("Press 'R' to restart",
@@ -142,29 +143,54 @@ const game = new SantaShooter();
 //---------------
 // Objects
 //---------------
-class Item extends GameObject {
+class Item extends Node2d {
     constructor() {
-        super("Item");
-        this.collider = new Collider(new AABB(canvas.width/2, canvas.height/2, 32, 32));
+        super(canvas.width/2, canvas.height/2);
+        this.addChild(new Collider2d(32, 32)).onCollision = (cld) => {
+            // Item Star Collidion
+            let obj = cld.parent;
+            if (obj && obj.name === "Star" && !this.collected) {
+                // Collect
+                if (this.name === "ItemBonusHp") {
+                    if (globals.player.hp < globals.player.hpMax) {
+                        globals.player.hp += 1;
+                    }
+                } else if (this.name === "ItemBigStars") {
+                    globals.bigStarsTimer.reset();
+                    globals.bigStarsTimer.unpause();
+                } else if (this.name === "ItemAutoTargeting") {
+                    globals.autoTargetingTimer.reset();
+                    globals.autoTargetingTimer.unpause();
+                } else if (this.name === "ItemFastShooting") {
+                    globals.fastShootingTimer.reset();
+                    globals.fastShootingTimer.unpause();
+                }
+                obj.dead = true;
+                this.dead = true;
+                game.emitParticles(this.position.x, this.position.y, 10, "white");
+            }
+        };
+
+
         const r = Math.random();
         if (r < 0.25) {
             this.name = "ItemFastShooting";
-            this.sprite = new Sprite(assets.getImage("FastShooting"));
+            this.addChild(new Sprite2d(assets.getImage("FastShooting"), 32, 32));
         } else if (r < 0.5) {
             this.name = "ItemAutoTargeting";
-            this.sprite = new Sprite(assets.getImage("AutoTargeting"));
+            this.addChild(new Sprite2d(assets.getImage("AutoTargeting"), 32, 32));
         } else if (r < 0.75) {
             this.name = "ItemBigStars";
-            this.sprite = new Sprite(assets.getImage("BigStars"));
+            this.addChild(new Sprite2d(assets.getImage("BigStars"), 32, 32));
         } else {
             this.name = "ItemBonusHp";
-            this.sprite = new Sprite(assets.getImage("BonusHp"));
+            this.addChild(new Sprite2d(assets.getImage("BonusHp"), 32, 32));
         }
-        this.despawnTimer = new Timer(10, true, () => {this.dead = true});
+        this.addChild(new Timer(10, true, () => {this.dead = true}));
     }
 
     update(deltaTime) {
-        this.despawnTimer.update(deltaTime);
+        super.update(deltaTime);
     }
 
     draw(ctx) {
@@ -172,57 +198,39 @@ class Item extends GameObject {
             super.draw(ctx);
         }
     }
-
-    onCollision(obj) {
-        if (obj.name === "Star" && !this.collected) {
-            // Collect
-            if (this.name === "ItemBonusHp") {
-                if (globals.player.hp < globals.player.hpMax) {
-                    globals.player.hp += 1;
-                }
-            } else if (this.name === "ItemBigStars") {
-                globals.bigStarsTimer.reset();
-                globals.bigStarsTimer.unpause();
-            } else if (this.name === "ItemAutoTargeting") {
-                globals.autoTargetingTimer.reset();
-                globals.autoTargetingTimer.unpause();
-            } else if (this.name === "ItemFastShooting") {
-                globals.fastShootingTimer.reset();
-                globals.fastShootingTimer.unpause();
-            }
-            obj.dead = true;
-            this.dead = true;
-            game.emitParticles(this.position.x, this.position.y, 10, "white");
-        }
-    }
 }
 
-class Star extends GameObject {
+class Star extends Node2d {
     constructor(x, y, big) {
-        super("Star");
+        super(x,y);
+        this.name = "Star";
         this.dmg = big? 1000 : 1;
         this.hp = 5;
-        this.sprite = new Sprite(assets.getImage("Star"));
-        this.collider = new Collider(new AABB(x, y, big? 32 : 16, big? 32 : 16));
-        this.spd = 5;
+        let size = big? 32 : 16;
+        this.addChild(new Sprite2d(assets.getImage("Star"), size, size));
+        this.addChild(new Collider2d(size, size));
+        this.spd = 400;
     }
 
     update(deltaTime) {
+        super.update(deltaTime);
+
         if (globals.autoTargetingTimer.counter > 0 && !globals.autoTargetingTimer.paused) {
             const enemy = game.nearestObject(this.position.x, this.position.y, /^Enemy$/);
             if (enemy) {
                 let dx = enemy.position.x - this.position.x;
                 let dy = enemy.position.y - this.position.y;
                 let d = Math.sqrt(dx*dx + dy*dy);
-                this.collider.aabb.translate(this.spd * dx / d, this.spd * dy / d);
+                this.position.x += deltaTime * this.spd * dx / d;
+                this.position.y += deltaTime * this.spd * dy / d;
             } else {
-                this.collider.aabb.translate(this.spd, 0);
+                this.position.x += deltaTime * this.spd;
             }
         } else {
-            this.collider.aabb.translate(this.spd, 0);
+            this.position.x += deltaTime * this.spd;
         }
 
-        if (this.collider.aabb.min.x > canvas.width) {
+        if (this.globalPosition.x > canvas.width) {
             this.dead = true;
         }
     }
@@ -232,36 +240,49 @@ class Star extends GameObject {
     }
 }
 
-class Player extends GameObject {
+class Player extends Node2d {
     constructor(x, y) {
-        super("Player");
+        super(x,y);
+        this.name = "Player";
         this.hpMax = 10;
         this.hp = 5;
-        this.sprite = new Sprite(assets.getImage("Player"));
-        this.collider = new Collider(new AABB(x, y, 64, 64));
-        this.shootTimer = new Timer(0.3, false, this.shoot.bind(this));
+        this.addChild(new Sprite2d(assets.getImage("Player"), 64, 64));
+        this.addChild(new Collider2d(64, 64)).onCollision = (cld) => {
+            if (cld.parent && cld.parent.name === "Enemy") {
+                this.hp -= 1;
+                if (this.hp <= 0) {
+                    if (globals.score > localStorage.getItem("santashooter_highscore")) {
+                        localStorage.setItem("santashooter_highscore", globals.score);
+                    }
+                }
+                cld.parent.dead = true;
+            }
+        };
+        this.shootTimer = this.addChild(new Timer(0.3, false, this.shoot.bind(this)));
     }
 
     shoot() {
-        game.addObject(new Star(this.collider.aabb.center.x, this.collider.aabb.center.y, (!globals.bigStarsTimer.paused && globals.bigStarsTimer.counter > 0)));
+        game.addObject(new Star(
+            this.globalPosition.x,
+            this.globalPosition.y,
+            (!globals.bigStarsTimer.paused && globals.bigStarsTimer.counter > 0)));
     }
 
     update(deltaTime) {
+        super.update(deltaTime);
 
         // Move
-        const spd = 2+(globals.score/80000.0);
+        const spd = deltaTime * (80+(globals.score/5000.0));
         if (keys["ArrowUp"] || keys["w"]) {
-            if (this.collider.aabb.min.y > 0) {
-                this.collider.aabb.translate(0,-spd);
+            if (this.globalPosition.y > 0) {
+                this.position.y -= spd;
             }
         }
         if (keys["ArrowDown"] || keys["s"]) {
-            if (this.collider.aabb.max.y < canvas.height) {
-                this.collider.aabb.translate(0,+spd);
+            if (this.globalPosition.y < canvas.height) {
+                this.position.y += spd;
             }
         }
-
-        this.shootTimer.update(deltaTime);
 
         this.shootTimer.cooldown = (!globals.fastShootingTimer.paused && globals.fastShootingTimer.counter > 0)? 0.1 : 0.3;
     }
@@ -278,62 +299,62 @@ class Player extends GameObject {
             }
         }
     }
-
-    onCollision(obj) {
-        if (obj.name === "Enemy") {
-            this.hp -= 1;
-            obj.dead = true;
-        }
-    }
 }
 globals.player = new Player(100,canvas.height/2);
 game.addObject(globals.player);
 
-class Enemy extends GameObject {
+class Enemy extends Node2d {
     constructor(x, y) {
-        super("Enemy");
-        this.collider = new Collider(new AABB(x, y, 40, 40));
+        super(x,y);
+        this.name = "Enemy";
+
+        this.addChild(new Collider2d(40, 40)).onCollision = (cld) => {
+            let obj = cld.parent;
+            if (obj.name === "Star") {
+                // Enemy Star Collision
+                obj.dead = true;
+
+                this.hp -= obj.dmg;
+                let numParticles = 0;
+                let addScore = 0;
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    numParticles = 10;
+                    addScore = 100;
+                } else {
+                    numParticles = 3;
+                    addScore = 10;
+                }
+                game.emitParticles(
+                    this.globalPosition.x,
+                    this.globalPosition.y,
+                    numParticles, "yellow");
+                globals.score += addScore;
+            }
+        };
+
+
         const idx = (Math.floor(Math.random()*32)).toString().padStart(2, "0");
-        this.sprite = new Sprite(assets.getImage(`Enemy_${idx}`));
+        this.addChild(new Sprite2d(assets.getImage(`Enemy_${idx}`), 40, 40));
         this.hp = (Math.floor(Math.random()*5) + 1) + (globals.score / 75000.0);
         this.maxHp = this.hp;
 
-        this.velocity = this.position.directionTo(globals.player.position);
+        this.velocity = this.position.directionTo(globals.player.position).scaled(75);
     }
 
     update(deltaTime) {
-        this.collider.aabb.translate(this.velocity.x, this.velocity.y);
+        super.update(deltaTime);
 
-        if (this.collider.aabb.max.x < 0) {
+        this.position.x += deltaTime * this.velocity.x;
+        this.position.y += deltaTime * this.velocity.y;
+
+        if (this.globalPosition.x < 0) {
             this.dead = true;
         }
     }
 
     draw(ctx) {
         super.draw(ctx);
-    }
-
-    onCollision(obj) {
-        if (obj.name === "Star") {
-            obj.dead = true;
-
-            this.hp -= obj.dmg;
-            let numParticles = 0;
-            let addScore = 0;
-            if (this.hp <= 0) {
-                this.dead = true;
-                numParticles = 10;
-                addScore = 100;
-            } else {
-                numParticles = 3;
-                addScore = 10;
-            }
-            game.emitParticles(
-                    this.collider.aabb.center.x,
-                    this.collider.aabb.center.y,
-                    numParticles, "yellow");
-            globals.score += addScore;
-        }
     }
 }
 
